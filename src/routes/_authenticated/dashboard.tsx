@@ -80,12 +80,17 @@ function Dashboard() {
 
   const refProgress = Math.min(5, data?.refCount ?? 0);
 
-  if (!profile?.onboarded) {
+  // While auth/profile is loading, or while we're about to redirect to onboarding,
+  // show a neutral placeholder instead of flashing a stale "finish onboarding" tile.
+  if (loading || !profile || !profile.role || !profile.onboarded) {
     return (
-      <div className="tile rounded-xl p-8 text-center">
-        <h2 className="font-display text-xl font-bold">Finish setting up your profile</h2>
-        <p className="mt-2 text-sm text-muted-foreground">Complete onboarding to start getting matched.</p>
-        <Link to="/onboarding" className="mt-6 inline-block rounded-lg bg-primary px-6 py-2.5 text-sm font-bold text-primary-foreground">Continue onboarding</Link>
+      <div className="space-y-6">
+        <div className="h-7 w-40 animate-pulse rounded bg-muted" />
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="h-44 animate-pulse rounded-xl bg-muted" />
+          ))}
+        </div>
       </div>
     );
   }
