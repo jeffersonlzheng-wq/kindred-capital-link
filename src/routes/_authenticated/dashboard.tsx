@@ -1,17 +1,26 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { computeMatch } from "@/lib/catalyst";
 import { MatchCard } from "@/components/MatchCard";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
 });
 
 function Dashboard() {
-  const { profile, user } = useAuth();
+  const { profile, user, loading } = useAuth();
+  const navigate = useNavigate();
+
+  // Auto-route to onboarding the moment we know the profile isn't complete.
+  useEffect(() => {
+    if (loading || !profile) return;
+    if (!profile.role || !profile.onboarded) {
+      navigate({ to: "/onboarding", replace: true });
+    }
+  }, [loading, profile, navigate]);
 
   const { data } = useQuery({
     queryKey: ["dashboard", user?.id],
