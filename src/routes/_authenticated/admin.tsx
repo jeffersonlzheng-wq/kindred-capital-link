@@ -117,7 +117,145 @@ function Admin() {
         </ul>
       </div>
 
+      <ReferralsAdmin />
+
       <AllMessages />
+    </div>
+  );
+}
+
+type ReferralRow = {
+  id: string;
+  status: string | null;
+  created_at: string;
+  referrer: { id: string; full_name: string | null; email: string } | null;
+  referred: { id: string; full_name: string | null; email: string; role: string | null; onboarded: boolean } | null;
+};
+
+function ReferralsAdmin() {
+  const qc = useQueryClient();
+  const [referrerFilter, setReferrerFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "active">("all");
+
+  const { data: rows } = useQuery({
+    queryKey: ["admin-referrals"],
+    queryFn: async (): Promise<ReferralRow[]> => {
+      const { data: refs } = await supabase
+        .from("referrals")
+        .select("id, referrer_id, referred_id, status, created_at")
+        .order("created_at", { ascending: false });
+      if (!refs?.length) return [];
+      const ids = Array.from(new Set(refs.flatMap(r => [r.referrer_id, r.referred_id])));
+      const { data: profs } = await supabase
+        .from("profiles")
+        .select("id, full_name, email, role, onboarded")
+        .in("id", ids);
+      const map = new Map((profs ?? []).map(p => [p.id, p]));
+      return refs.map(r => ({
+        id: r.id,
+        status: r.status,
+        created_at: r.created_at,
+        referrer: map.get(r.referrer_id) ?? null,
+        referred: map.get(r.referred_id) ?? null,
+      }));
+    },
+  });
+
+  const referrers = Array.from(
+    new Map((rows ?? []).filter(r => r.referrer).map(r => [r.referrer!.id, r.referrer!])).values(),
+  );
+
+  const effectiveStatus = (r: ReferralRow) =>
+    r.referred?.onboarded ? "active" : (r.status || "pending");
+
+  const filtered = (rows ?? []).filter(r => {
+    if (referrerFilter !== "all" && r.referrer?.id !== referrerFilter) return false;
+    if (statusFilter !== "all" && effectiveStatus(r) !== statusFilter) return false;
+    return true;
+  });
+
+  const updateStatus = async (id: string, status: string) => {
+    await supabase.from("referrals").update({ status }).eq("id", id);
+    qc.invalidateQueries({ queryKey: ["admin-referrals"] });
+    toast.success(`Marked ${status}`);
+  };
+
+  const counts = {
+    all: rows?.length ?? 0,
+    pending: rows?.filter(r => effectiveStatus(r) === "pending").length ?? 0,
+    active: rows?.filter(r => effectiveStatus(r) === "active").length ?? 0,
+  };
+
+  return (
+    <div className="tile rounded-xl">
+      <div className="flex flex-col gap-3 border-b border-border p-4 md:flex-row md:items-center md:justify-between">
+        <h2 className="font-display text-lg font-bold">
+          Referred users <span className="mono-label ml-2">{filtered.length} of {rows?.length ?? 0}</span>
+        </h2>
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            value={referrerFilter}
+            onChange={e => setReferrerFilter(e.target.value)}
+            className="h-9 rounded-md border border-border bg-surface px-3 text-sm outline-none focus:border-primary"
+          >
+            <option value="all">All referrers</option>
+            {referrers.map(p => (
+              <option key={p.id} value={p.id}>{p.full_name || p.email}</option>
+            ))}
+          </select>
+          <div className="flex overflow-hidden rounded-md border border-border">
+            {(["all", "pending", "active"] as const).map(s => (
+              <button
+                key={s}
+                onClick={() => setStatusFilter(s)}
+                className={`px-3 py-1.5 text-xs font-bold uppercase ${statusFilter === s ? "bg-primary text-primary-foreground" : "bg-surface"}`}
+              >
+                {s} ({counts[s]})
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="max-h-[60vh] overflow-y-auto">
+        {!filtered.length ? (
+          <p className="p-4 text-sm text-muted-foreground">No referrals match these filters.</p>
+        ) : (
+          <ul>
+            {filtered.map(r => {
+              const status = effectiveStatus(r);
+              return (
+                <li key={r.id} className="flex flex-col gap-3 border-b border-border p-4 last:border-b-0 md:flex-row md:items-center md:justify-between">
+                  <div className="min-w-0 flex-1">
+                    <Link
+                      to="/profile/$id"
+                      params={{ id: r.referred?.id ?? "" }}
+                      className="font-semibold hover:underline"
+                    >
+                      {r.referred?.full_name || r.referred?.email || "Unknown user"}
+                    </Link>
+                    <div className="mono-label mt-0.5">
+                      {r.referred?.role || "no role"} · referred by {r.referrer?.full_name || r.referrer?.email || "?"} · {new Date(r.created_at).toLocaleDateString()}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`chip ${status === "active" ? "bg-primary text-primary-foreground" : ""}`}>
+                      {status}
+                    </span>
+                    {status !== "active" && (
+                      <button
+                        onClick={() => updateStatus(r.id, "active")}
+                        className="rounded-md border border-border px-2 py-1 text-xs font-bold"
+                      >
+                        Mark active
+                      </button>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }
