@@ -23,8 +23,8 @@ function Dashboard() {
   }, [loading, profile, navigate]);
 
   const { data } = useQuery({
-    queryKey: ["dashboard", user?.id],
-    enabled: !!user,
+    queryKey: ["dashboard", user?.id, profile?.role],
+    enabled: !!user && !!profile?.onboarded,
     queryFn: async () => {
       const [{ data: profiles }, { data: founders }, { data: investors }, { data: me }, { data: docs }, { data: refs }, { data: msgs }] = await Promise.all([
         supabase.from("profiles").select("id, full_name, role, location, featured"),
