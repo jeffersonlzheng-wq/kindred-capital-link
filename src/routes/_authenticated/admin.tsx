@@ -25,6 +25,7 @@ function Admin() {
   const { isAdmin } = useAuth();
   const qc = useQueryClient();
   const [filter, setFilter] = useState<"all" | "founder" | "investor">("all");
+  const [referralsOpen, setReferralsOpen] = useState(false);
 
   const { data: stats } = useQuery({
     queryKey: ["admin-stats"],
