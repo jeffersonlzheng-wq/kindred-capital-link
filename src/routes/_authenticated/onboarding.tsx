@@ -71,9 +71,47 @@ function Onboarding() {
   const [iInterests, setIInterests] = useState<string[]>([]);
   const [availability, setAvailability] = useState<string[]>([]);
 
+  // Hydrate role-specific fields when editing an existing profile.
   useEffect(() => {
-    if (profile?.onboarded) nav({ to: "/dashboard" });
-  }, [profile, nav]);
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      if (role === "founder") {
+        const { data } = await supabase.from("founder_profiles").select("*").eq("user_id", user.id).maybeSingle();
+        if (cancelled || !data) return;
+        setCompanyName(data.company_name ?? "");
+        setWebsite(data.website ?? "");
+        setSector((data.sector as string) ?? "");
+        setSubsector(data.subsector ?? "");
+        setStage((data.stage as string) ?? "");
+        setFundraisingStatus((data.fundraising_status as string) ?? "not_raising");
+        setAmountRaising(data.amount_raising != null ? String(data.amount_raising) : "");
+        setDescription(data.description ?? "");
+        setTraction(data.traction ?? "");
+        setTeamSize(data.team_size != null ? String(data.team_size) : "");
+        setTargetCustomer(data.target_customer ?? "");
+        setBusinessModel(data.business_model ?? "");
+        setFInterests(data.interests ?? []);
+        setLookingFor(data.looking_for ?? []);
+      } else if (role === "investor") {
+        const { data } = await supabase.from("investor_profiles").select("*").eq("user_id", user.id).maybeSingle();
+        if (cancelled || !data) return;
+        setFundName(data.fund_name ?? "");
+        setIRole(data.role ?? "");
+        setIWebsite(data.website ?? "");
+        setInvestorType((data.investor_type as string) ?? "");
+        setSectors((data.sectors as string[]) ?? []);
+        setStages((data.stages as string[]) ?? []);
+        setCheckMin(data.check_min != null ? String(data.check_min) : "");
+        setCheckMax(data.check_max != null ? String(data.check_max) : "");
+        setThesis(data.thesis ?? "");
+        setLookingForFounders(data.looking_for_founders ?? "");
+        setIInterests(data.interests ?? []);
+        setAvailability(data.availability ?? []);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [user, role]);
 
   const toggle = (arr: string[], setArr: (v: string[]) => void, v: string) => {
     setArr(arr.includes(v) ? arr.filter(x => x !== v) : [...arr, v]);
