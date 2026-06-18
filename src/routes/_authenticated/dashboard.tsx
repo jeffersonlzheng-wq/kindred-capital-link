@@ -1,21 +1,30 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { computeMatch } from "@/lib/catalyst";
 import { MatchCard } from "@/components/MatchCard";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
 });
 
 function Dashboard() {
-  const { profile, user } = useAuth();
+  const { profile, user, loading } = useAuth();
+  const navigate = useNavigate();
+
+  // Auto-route to onboarding the moment we know the profile isn't complete.
+  useEffect(() => {
+    if (loading || !profile) return;
+    if (!profile.role || !profile.onboarded) {
+      navigate({ to: "/onboarding", replace: true });
+    }
+  }, [loading, profile, navigate]);
 
   const { data } = useQuery({
-    queryKey: ["dashboard", user?.id],
-    enabled: !!user,
+    queryKey: ["dashboard", user?.id, profile?.role],
+    enabled: !!user && !!profile?.onboarded,
     queryFn: async () => {
       const [{ data: profiles }, { data: founders }, { data: investors }, { data: me }, { data: docs }, { data: refs }, { data: msgs }] = await Promise.all([
         supabase.from("profiles").select("id, full_name, role, location, featured"),
@@ -71,12 +80,17 @@ function Dashboard() {
 
   const refProgress = Math.min(5, data?.refCount ?? 0);
 
-  if (!profile?.onboarded) {
+  // While auth/profile is loading, or while we're about to redirect to onboarding,
+  // show a neutral placeholder instead of flashing a stale "finish onboarding" tile.
+  if (loading || !profile || !profile.role || !profile.onboarded) {
     return (
-      <div className="tile rounded-xl p-8 text-center">
-        <h2 className="font-display text-xl font-bold">Finish setting up your profile</h2>
-        <p className="mt-2 text-sm text-muted-foreground">Complete onboarding to start getting matched.</p>
-        <Link to="/onboarding" className="mt-6 inline-block rounded-lg bg-primary px-6 py-2.5 text-sm font-bold text-primary-foreground">Continue onboarding</Link>
+      <div className="space-y-6">
+        <div className="h-7 w-40 animate-pulse rounded bg-muted" />
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="h-44 animate-pulse rounded-xl bg-muted" />
+          ))}
+        </div>
       </div>
     );
   }
