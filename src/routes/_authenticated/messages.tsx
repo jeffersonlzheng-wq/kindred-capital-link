@@ -30,7 +30,7 @@ function MessagesLayout() {
   });
 
   return (
-    <div className="fixed inset-x-0 top-14 bottom-14 grid bg-background md:grid-cols-[300px_1fr]">
+    <div className="fixed inset-x-0 top-14 grid bg-background md:grid-cols-[300px_1fr]" style={{ bottom: "calc(3.5rem + env(safe-area-inset-bottom))" }}>
       <aside className={`flex flex-col border-r border-border ${isDetail ? "hidden md:flex" : "flex"}`}>
         <div className="border-b border-border p-4">
           <h2 className="font-display text-lg font-bold">Inbox</h2>
