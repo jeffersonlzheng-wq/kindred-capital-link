@@ -25,6 +25,7 @@ function Admin() {
   const { isAdmin } = useAuth();
   const qc = useQueryClient();
   const [filter, setFilter] = useState<"all" | "founder" | "investor">("all");
+  const [referralsOpen, setReferralsOpen] = useState(false);
 
   const { data: stats } = useQuery({
     queryKey: ["admin-stats"],
@@ -89,6 +90,12 @@ function Admin() {
         ))}
       </div>
 
+      <div className="flex flex-wrap gap-2">
+        <button onClick={() => setReferralsOpen(true)} className="rounded-md bg-primary px-4 py-2 text-xs font-bold uppercase text-primary-foreground">
+          See Referrals
+        </button>
+      </div>
+
       <div className="flex gap-2">
         {(["all", "founder", "investor"] as const).map(f => (
           <button key={f} onClick={() => setFilter(f)} className={`rounded-md px-3 py-1.5 text-xs font-bold uppercase ${filter === f ? "bg-primary text-primary-foreground" : "border border-border"}`}>{f}</button>
@@ -117,7 +124,16 @@ function Admin() {
         </ul>
       </div>
 
-      <ReferralsAdmin />
+      <Dialog open={referralsOpen} onOpenChange={setReferralsOpen}>
+        <DialogContent className="flex max-h-[90vh] max-w-4xl flex-col gap-0 overflow-hidden p-0">
+          <DialogHeader className="border-b border-border p-4">
+            <DialogTitle className="font-display text-lg font-bold">Referrals</DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto p-4">
+            <ReferralsAdmin />
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <AllMessages />
     </div>
