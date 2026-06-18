@@ -79,7 +79,7 @@ function Conversation() {
         </div>
       </div>
 
-      <div className="flex-1 space-y-3 overflow-y-auto p-4">
+      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
         {messages?.map(m => {
           const mine = m.sender_id === user?.id;
           const doc = m.document_id ? myDocs?.find(d => d.id === m.document_id) : null;
@@ -115,7 +115,7 @@ function Conversation() {
         </div>
       )}
 
-      <form onSubmit={(e) => { e.preventDefault(); send(text); }} className="flex gap-2 border-t border-border p-3">
+      <form onSubmit={(e) => { e.preventDefault(); send(text); }} className="shrink-0 flex gap-2 border-t border-border bg-background p-3">
         <button type="button" onClick={() => setShowDocs(!showDocs)} className="shrink-0 rounded-md border border-border bg-surface px-3 text-sm font-bold">📎</button>
         <input
           value={text} onChange={(e) => setText(e.target.value)}
