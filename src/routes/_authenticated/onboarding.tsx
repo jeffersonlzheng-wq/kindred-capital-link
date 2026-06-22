@@ -142,6 +142,74 @@ function Onboarding() {
     setArr(arr.includes(v) ? arr.filter(x => x !== v) : [...arr, v]);
   };
 
+  // ===== AI Autofill =====
+  const [autofillText, setAutofillText] = useState("");
+  const [autofillFile, setAutofillFile] = useState<File | null>(null);
+  const [autofilling, setAutofilling] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const runAutofill = useServerFn(autofillOnboarding);
+
+  const applyAutofill = (r: AutofillResult) => {
+    const set = (cur: string, v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : cur);
+    setFullName((c) => set(c, r.full_name));
+    setLinkedin((c) => set(c, r.linkedin));
+    setLocation((c) => set(c, r.location));
+    setBio((c) => set(c, r.bio));
+    if (role === "founder") {
+      setCompanyName((c) => set(c, r.company_name));
+      setWebsite((c) => set(c, r.website));
+      const s = pickEnum(SECTORS, r.sector); if (s) setSector(s);
+      setSubsector((c) => set(c, r.subsector));
+      const st = pickEnum(STAGES, r.stage); if (st) setStage(st);
+      const fs = pickEnum(FUNDRAISING, r.fundraising_status); if (fs) setFundraisingStatus(fs);
+      if (typeof r.amount_raising === "number") setAmountRaising(String(r.amount_raising));
+      setDescription((c) => set(c, r.description));
+      setTraction((c) => set(c, r.traction));
+      if (typeof r.team_size === "number") setTeamSize(String(r.team_size));
+      setTargetCustomer((c) => set(c, r.target_customer));
+      setBusinessModel((c) => set(c, r.business_model));
+      const ints = intersect(INTERESTS, r.interests); if (ints.length) setFInterests(ints);
+      const lf = intersect(FOUNDER_GOALS, r.looking_for); if (lf.length) setLookingFor(lf);
+    } else if (role === "investor") {
+      setFundName((c) => set(c, r.fund_name));
+      setIRole((c) => set(c, r.investor_role));
+      setIWebsite((c) => set(c, r.website));
+      const it = pickEnum(INVESTOR_TYPES, r.investor_type); if (it) setInvestorType(it);
+      const secs = intersect(SECTORS.map(s => s.value), r.sectors); if (secs.length) setSectors(secs);
+      const sts = intersect(STAGES.map(s => s.value), r.stages); if (sts.length) setStages(sts);
+      if (typeof r.check_min === "number") setCheckMin(String(r.check_min));
+      if (typeof r.check_max === "number") setCheckMax(String(r.check_max));
+      setThesis((c) => set(c, r.thesis));
+      if (typeof r.looking_for_founders === "string") setLookingForFounders(r.looking_for_founders);
+      const ints = intersect(INTERESTS, r.interests); if (ints.length) setIInterests(ints);
+      const av = intersect(INVESTOR_AVAILABILITY, r.availability); if (av.length) setAvailability(av);
+    }
+  };
+
+  const handleAutofill = async () => {
+    if (!role) return;
+    if (!autofillText.trim() && !autofillFile) {
+      toast.error("Paste your resume / LinkedIn text or upload a file");
+      return;
+    }
+    setAutofilling(true);
+    try {
+      let filePayload: { name: string; mime: string; dataBase64: string } | null = null;
+      if (autofillFile) {
+        if (autofillFile.size > 5 * 1024 * 1024) throw new Error("File must be under 5MB");
+        const dataBase64 = await fileToBase64(autofillFile);
+        filePayload = { name: autofillFile.name, mime: autofillFile.type || "application/pdf", dataBase64 };
+      }
+      const result = await runAutofill({ data: { role, text: autofillText, file: filePayload } });
+      applyAutofill(result);
+      toast.success("Profile filled in — review and edit below");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Autofill failed");
+    } finally {
+      setAutofilling(false);
+    }
+  };
+
   const save = async () => {
     if (!user) return;
     try {
