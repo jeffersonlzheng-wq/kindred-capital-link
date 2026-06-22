@@ -1,13 +1,38 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { SECTORS, STAGES, FUNDRAISING, INVESTOR_TYPES, INTERESTS, FOUNDER_GOALS, INVESTOR_AVAILABILITY } from "@/lib/catalyst";
+import { autofillOnboarding, type AutofillResult } from "@/lib/onboarding.functions";
 import { toast } from "sonner";
+import { Sparkles, Upload, Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/onboarding")({
   component: Onboarding,
 });
+
+function intersect<T extends string>(allowed: readonly T[], values: unknown): T[] {
+  if (!Array.isArray(values)) return [];
+  const set = new Set<string>(allowed as readonly string[]);
+  return values.filter((v): v is T => typeof v === "string" && set.has(v));
+}
+function pickEnum<T extends string>(allowed: readonly { value: T }[] | readonly T[], v: unknown): T | "" {
+  if (typeof v !== "string") return "";
+  const vals = (allowed as readonly unknown[]).map((x) => (typeof x === "string" ? x : (x as { value: T }).value));
+  return (vals.includes(v) ? (v as T) : "") as T | "";
+}
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => {
+      const s = String(r.result || "");
+      resolve(s.includes(",") ? s.split(",")[1] : s);
+    };
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+}
 
 function Pill({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
@@ -117,6 +142,74 @@ function Onboarding() {
     setArr(arr.includes(v) ? arr.filter(x => x !== v) : [...arr, v]);
   };
 
+  // ===== AI Autofill =====
+  const [autofillText, setAutofillText] = useState("");
+  const [autofillFile, setAutofillFile] = useState<File | null>(null);
+  const [autofilling, setAutofilling] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const runAutofill = useServerFn(autofillOnboarding);
+
+  const applyAutofill = (r: AutofillResult) => {
+    const set = (cur: string, v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : cur);
+    setFullName((c) => set(c, r.full_name));
+    setLinkedin((c) => set(c, r.linkedin));
+    setLocation((c) => set(c, r.location));
+    setBio((c) => set(c, r.bio));
+    if (role === "founder") {
+      setCompanyName((c) => set(c, r.company_name));
+      setWebsite((c) => set(c, r.website));
+      const s = pickEnum(SECTORS, r.sector); if (s) setSector(s);
+      setSubsector((c) => set(c, r.subsector));
+      const st = pickEnum(STAGES, r.stage); if (st) setStage(st);
+      const fs = pickEnum(FUNDRAISING, r.fundraising_status); if (fs) setFundraisingStatus(fs);
+      if (typeof r.amount_raising === "number") setAmountRaising(String(r.amount_raising));
+      setDescription((c) => set(c, r.description));
+      setTraction((c) => set(c, r.traction));
+      if (typeof r.team_size === "number") setTeamSize(String(r.team_size));
+      setTargetCustomer((c) => set(c, r.target_customer));
+      setBusinessModel((c) => set(c, r.business_model));
+      const ints = intersect(INTERESTS, r.interests); if (ints.length) setFInterests(ints);
+      const lf = intersect(FOUNDER_GOALS, r.looking_for); if (lf.length) setLookingFor(lf);
+    } else if (role === "investor") {
+      setFundName((c) => set(c, r.fund_name));
+      setIRole((c) => set(c, r.investor_role));
+      setIWebsite((c) => set(c, r.website));
+      const it = pickEnum(INVESTOR_TYPES, r.investor_type); if (it) setInvestorType(it);
+      const secs = intersect(SECTORS.map(s => s.value), r.sectors); if (secs.length) setSectors(secs);
+      const sts = intersect(STAGES.map(s => s.value), r.stages); if (sts.length) setStages(sts);
+      if (typeof r.check_min === "number") setCheckMin(String(r.check_min));
+      if (typeof r.check_max === "number") setCheckMax(String(r.check_max));
+      setThesis((c) => set(c, r.thesis));
+      if (typeof r.looking_for_founders === "string") setLookingForFounders(r.looking_for_founders);
+      const ints = intersect(INTERESTS, r.interests); if (ints.length) setIInterests(ints);
+      const av = intersect(INVESTOR_AVAILABILITY, r.availability); if (av.length) setAvailability(av);
+    }
+  };
+
+  const handleAutofill = async () => {
+    if (!role) return;
+    if (!autofillText.trim() && !autofillFile) {
+      toast.error("Paste your resume / LinkedIn text or upload a file");
+      return;
+    }
+    setAutofilling(true);
+    try {
+      let filePayload: { name: string; mime: string; dataBase64: string } | null = null;
+      if (autofillFile) {
+        if (autofillFile.size > 5 * 1024 * 1024) throw new Error("File must be under 5MB");
+        const dataBase64 = await fileToBase64(autofillFile);
+        filePayload = { name: autofillFile.name, mime: autofillFile.type || "application/pdf", dataBase64 };
+      }
+      const result = await runAutofill({ data: { role, text: autofillText, file: filePayload } });
+      applyAutofill(result);
+      toast.success("Profile filled in — review and edit below");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Autofill failed");
+    } finally {
+      setAutofilling(false);
+    }
+  };
+
   const save = async () => {
     if (!user) return;
     try {
@@ -190,6 +283,62 @@ function Onboarding() {
       </div>
 
       <div className="space-y-6">
+        <div className="rounded-xl border border-primary/30 bg-primary/5 p-4">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-primary" />
+            <div className="font-display text-sm font-bold">Autofill with AI</div>
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {role === "founder"
+              ? "Upload a pitch deck / resume PDF or paste your LinkedIn — we'll prefill the form. You can edit anything after."
+              : "Upload your bio / fund one-pager PDF or paste your LinkedIn — we'll prefill the form."}
+          </p>
+          <textarea
+            className={input + " mt-3 h-24 py-2"}
+            placeholder="Paste resume, LinkedIn 'About' section, or company description…"
+            value={autofillText}
+            onChange={(e) => setAutofillText(e.target.value)}
+            disabled={autofilling}
+          />
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <input
+              ref={fileRef}
+              type="file"
+              accept="application/pdf,image/*"
+              className="hidden"
+              onChange={(e) => setAutofillFile(e.target.files?.[0] ?? null)}
+            />
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              disabled={autofilling}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold hover:bg-accent disabled:opacity-50"
+            >
+              <Upload className="h-3.5 w-3.5" />
+              {autofillFile ? autofillFile.name.slice(0, 28) : "Upload PDF / image"}
+            </button>
+            {autofillFile && (
+              <button
+                type="button"
+                onClick={() => { setAutofillFile(null); if (fileRef.current) fileRef.current.value = ""; }}
+                className="text-xs text-muted-foreground hover:text-foreground"
+              >
+                Remove
+              </button>
+            )}
+            <div className="flex-1" />
+            <button
+              type="button"
+              onClick={handleAutofill}
+              disabled={autofilling || (!autofillText.trim() && !autofillFile)}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-1.5 text-xs font-bold text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            >
+              {autofilling ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+              {autofilling ? "Reading…" : "Autofill"}
+            </button>
+          </div>
+        </div>
+
         <Field label="Full name"><input className={input} value={fullName} onChange={(e) => setFullName(e.target.value)} /></Field>
         <div className="grid gap-4 md:grid-cols-2">
           <Field label="LinkedIn"><input className={input} value={linkedin} onChange={(e) => setLinkedin(e.target.value)} placeholder="linkedin.com/in/…" /></Field>
