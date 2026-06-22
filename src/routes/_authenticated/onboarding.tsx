@@ -1,13 +1,38 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { SECTORS, STAGES, FUNDRAISING, INVESTOR_TYPES, INTERESTS, FOUNDER_GOALS, INVESTOR_AVAILABILITY } from "@/lib/catalyst";
+import { autofillOnboarding, type AutofillResult } from "@/lib/onboarding.functions";
 import { toast } from "sonner";
+import { Sparkles, Upload, Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/onboarding")({
   component: Onboarding,
 });
+
+function intersect<T extends string>(allowed: readonly T[], values: unknown): T[] {
+  if (!Array.isArray(values)) return [];
+  const set = new Set<string>(allowed as readonly string[]);
+  return values.filter((v): v is T => typeof v === "string" && set.has(v));
+}
+function pickEnum<T extends string>(allowed: readonly { value: T }[] | readonly T[], v: unknown): T | "" {
+  if (typeof v !== "string") return "";
+  const vals = (allowed as readonly unknown[]).map((x) => (typeof x === "string" ? x : (x as { value: T }).value));
+  return (vals.includes(v) ? (v as T) : "") as T | "";
+}
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => {
+      const s = String(r.result || "");
+      resolve(s.includes(",") ? s.split(",")[1] : s);
+    };
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+}
 
 function Pill({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
