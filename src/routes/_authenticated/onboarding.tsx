@@ -283,6 +283,62 @@ function Onboarding() {
       </div>
 
       <div className="space-y-6">
+        <div className="rounded-xl border border-primary/30 bg-primary/5 p-4">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-primary" />
+            <div className="font-display text-sm font-bold">Autofill with AI</div>
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {role === "founder"
+              ? "Upload a pitch deck / resume PDF or paste your LinkedIn — we'll prefill the form. You can edit anything after."
+              : "Upload your bio / fund one-pager PDF or paste your LinkedIn — we'll prefill the form."}
+          </p>
+          <textarea
+            className={input + " mt-3 h-24 py-2"}
+            placeholder="Paste resume, LinkedIn 'About' section, or company description…"
+            value={autofillText}
+            onChange={(e) => setAutofillText(e.target.value)}
+            disabled={autofilling}
+          />
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <input
+              ref={fileRef}
+              type="file"
+              accept="application/pdf,image/*"
+              className="hidden"
+              onChange={(e) => setAutofillFile(e.target.files?.[0] ?? null)}
+            />
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              disabled={autofilling}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold hover:bg-accent disabled:opacity-50"
+            >
+              <Upload className="h-3.5 w-3.5" />
+              {autofillFile ? autofillFile.name.slice(0, 28) : "Upload PDF / image"}
+            </button>
+            {autofillFile && (
+              <button
+                type="button"
+                onClick={() => { setAutofillFile(null); if (fileRef.current) fileRef.current.value = ""; }}
+                className="text-xs text-muted-foreground hover:text-foreground"
+              >
+                Remove
+              </button>
+            )}
+            <div className="flex-1" />
+            <button
+              type="button"
+              onClick={handleAutofill}
+              disabled={autofilling || (!autofillText.trim() && !autofillFile)}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-1.5 text-xs font-bold text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            >
+              {autofilling ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+              {autofilling ? "Reading…" : "Autofill"}
+            </button>
+          </div>
+        </div>
+
         <Field label="Full name"><input className={input} value={fullName} onChange={(e) => setFullName(e.target.value)} /></Field>
         <div className="grid gap-4 md:grid-cols-2">
           <Field label="LinkedIn"><input className={input} value={linkedin} onChange={(e) => setLinkedin(e.target.value)} placeholder="linkedin.com/in/…" /></Field>
