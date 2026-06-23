@@ -28,38 +28,64 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <header className="sticky top-0 z-40 glass-header">
-        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-6">
+      <header
+        className="sticky top-0 z-40"
+        style={{
+          background: "oklch(0.095 0.008 248 / 0.95)",
+          backdropFilter: "blur(16px)",
+          borderBottom: "1px solid var(--color-border)",
+        }}
+      >
+        <div className="mx-auto flex h-13 max-w-5xl items-center justify-between px-5">
           <Link
             to="/dashboard"
-            className="font-display text-lg font-extrabold italic tracking-tight"
-            style={{
-              background: "linear-gradient(135deg, var(--color-primary) 0%, oklch(0.92 0.10 75) 100%)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              backgroundClip: "text",
-            }}
+            className="font-display text-sm font-bold tracking-tight"
+            style={{ color: "var(--color-foreground)", letterSpacing: "0.04em" }}
           >
             CATALYST
           </Link>
+
+          {/* Desktop center nav */}
+          <nav className="hidden md:flex items-center gap-1">
+            {items.map(({ to, label }) => {
+              const active = path === to || path.startsWith(to + "/");
+              return (
+                <Link
+                  key={to}
+                  to={to}
+                  className="px-3 py-1.5 rounded text-xs font-medium transition-colors"
+                  style={{
+                    color: active ? "var(--color-foreground)" : "var(--color-muted-foreground)",
+                    background: active ? "var(--color-surface-2)" : "transparent",
+                  }}
+                >
+                  {label}
+                </Link>
+              );
+            })}
+          </nav>
+
           <div className="flex items-center gap-3">
-            <span className="mono-label hidden md:inline opacity-60">{profile?.role ?? "—"}</span>
+            <span
+              className="mono-label hidden md:inline px-2 py-1 rounded"
+              style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}
+            >
+              {profile?.role ?? "—"}
+            </span>
             <Link
               to={profile ? "/profile/$id" : "/dashboard"}
               params={{ id: profile?.id ?? "" }}
-              className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold"
+              className="flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold"
               style={{
-                background: "linear-gradient(135deg, var(--color-primary) 0%, oklch(0.75 0.18 78) 100%)",
+                background: "var(--color-primary)",
                 color: "var(--color-primary-foreground)",
-                boxShadow: "0 0 12px oklch(0.83 0.155 86 / 0.4)",
               }}
             >
               {(profile?.full_name || profile?.email || "?").slice(0, 1).toUpperCase()}
             </Link>
             <button
               onClick={handleSignOut}
-              aria-label="Sign out"
-              className="text-xs font-bold uppercase tracking-wider transition-colors"
+              className="text-xs transition-colors"
               style={{ color: "var(--color-muted-foreground)" }}
             >
               Sign out
@@ -68,17 +94,18 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-6 pt-8 pb-28">{children}</main>
+      <main className="mx-auto max-w-5xl px-5 pt-7 pb-24">{children}</main>
 
+      {/* Mobile bottom nav */}
       <nav
-        className="fixed bottom-0 left-0 right-0 z-40 pb-[env(safe-area-inset-bottom)]"
+        className="fixed bottom-0 left-0 right-0 z-40 md:hidden pb-[env(safe-area-inset-bottom)]"
         style={{
-          background: "oklch(0.11 0.004 60 / 0.92)",
-          backdropFilter: "blur(24px) saturate(1.5)",
-          borderTop: "1px solid oklch(0.83 0.155 86 / 0.1)",
+          background: "oklch(0.095 0.008 248 / 0.96)",
+          backdropFilter: "blur(16px)",
+          borderTop: "1px solid var(--color-border)",
         }}
       >
-        <ul className="mx-auto flex max-w-7xl items-center justify-around px-2">
+        <ul className="flex items-center justify-around px-2">
           {items.map(({ to, label, Icon }) => {
             const active = path === to || path.startsWith(to + "/");
             return (
@@ -86,24 +113,16 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <Link
                   to={to}
                   aria-label={label}
-                  title={label}
-                  className="flex h-14 flex-col items-center justify-center gap-1 transition-all"
+                  className="flex h-14 flex-col items-center justify-center gap-1 transition-colors"
                   style={{ color: active ? "var(--color-primary)" : "var(--color-muted-foreground)" }}
                 >
-                  <Icon
-                    className="h-5 w-5 transition-all"
-                    strokeWidth={active ? 2.5 : 1.8}
-                    style={active ? { filter: "drop-shadow(0 0 6px oklch(0.83 0.155 86 / 0.7))" } : {}}
-                  />
+                  <Icon size={18} strokeWidth={active ? 2.5 : 1.8} />
                   <span
-                    className="rounded-full nav-active-dot transition-all"
-                    style={{
-                      width: active ? 16 : 0,
-                      height: 3,
-                      background: active ? "var(--color-primary)" : "transparent",
-                      display: "block",
-                    }}
-                  />
+                    className="text-[9px] font-semibold tracking-wide uppercase"
+                    style={{ opacity: active ? 1 : 0.5 }}
+                  >
+                    {label}
+                  </span>
                 </Link>
               </li>
             );

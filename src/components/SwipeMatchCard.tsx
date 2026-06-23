@@ -110,13 +110,9 @@ function CardFace({ entry, style, isDragging }: { entry: MatchEntry; style?: Rea
           {/* Match score */}
           <div className="text-right">
             <div
-              className="font-display text-5xl font-extrabold leading-none tabular-nums"
+              className="font-display text-5xl font-extrabold leading-none tabular-nums match-score"
               style={{
-                background: matchGradient(match),
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-                filter: isHighMatch ? "drop-shadow(0 0 12px oklch(0.83 0.155 86 / 0.5))" : "none",
+                filter: isHighMatch ? "drop-shadow(0 0 10px oklch(0.74 0.19 158 / 0.5))" : "none",
               }}
             >
               {match}%
