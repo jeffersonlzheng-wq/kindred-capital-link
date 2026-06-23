@@ -125,13 +125,17 @@ function Discover() {
       {/* ── Sectors — fills remaining height ─────── */}
       <div className="flex min-h-0 flex-1 flex-col">
         <p className="mono-label mb-2 shrink-0">Sectors</p>
-        <div className="grid grid-cols-3 gap-1.5 content-start sm:grid-cols-4">
+        {/* overflow-y-auto so last row is never clipped; scrollbar hidden */}
+        <div
+          className="grid grid-cols-3 gap-1.5 content-start sm:grid-cols-4 overflow-y-auto"
+          style={{ scrollbarWidth: "none" }}
+        >
           {sectors.map(s => (
             <Link
               key={s.value}
               to="/discover/$category"
               params={{ category: s.value }}
-              className="group flex flex-col items-center justify-center gap-1.5 rounded-xl px-2 py-3 text-center transition-all active:scale-[0.96] hover:border-primary/30"
+              className="group flex flex-col items-center justify-center gap-1 rounded-xl px-2 py-2.5 text-center transition-all active:scale-[0.96] hover:border-primary/30"
               style={{ background: "var(--color-card)", border: "1px solid var(--color-border)" }}
             >
               <span
