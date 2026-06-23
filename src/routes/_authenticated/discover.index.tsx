@@ -1,87 +1,177 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { DISCOVERY_CATEGORIES } from "@/lib/catalyst";
+import { DISCOVERY_CATEGORIES, SECTORS } from "@/lib/catalyst";
 import { useAuth } from "@/lib/auth";
-import { ArrowRight } from "lucide-react";
+import {
+  Zap, TrendingUp, Clock, Star, Users, Rocket,
+  Cpu, DollarSign, Heart, Leaf, Building2, ShoppingBag,
+  GraduationCap, Store, FlaskConical, Layers, Globe,
+} from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/discover/")({
   component: Discover,
 });
 
+const SECTOR_ICONS: Record<string, React.ReactNode> = {
+  saas:        <Layers size={16} />,
+  fintech:     <DollarSign size={16} />,
+  health_tech: <Heart size={16} />,
+  ai:          <Cpu size={16} />,
+  consumer:    <Users size={16} />,
+  climate:     <Leaf size={16} />,
+  real_estate: <Building2 size={16} />,
+  marketplace: <Store size={16} />,
+  education:   <GraduationCap size={16} />,
+  ecommerce:   <ShoppingBag size={16} />,
+  biotech:     <FlaskConical size={16} />,
+  deeptech:    <Globe size={16} />,
+};
+
+const META_CONFIG: Record<string, { icon: React.ReactNode; desc: string; accent: string }> = {
+  "high-match":        { icon: <Star size={20} />,      desc: "Profiles scoring ≥ 70% compatibility with you",  accent: "oklch(0.82 0.145 85)" },
+  "raising-now":       { icon: <Rocket size={20} />,    desc: "Founders actively fundraising right now",         accent: "oklch(0.82 0.145 85)" },
+  "new-this-week":     { icon: <Clock size={20} />,     desc: "Joined in the last 7 days",                       accent: "oklch(0.82 0.145 85)" },
+  "trending-founders": { icon: <TrendingUp size={20} />,desc: "Founders generating the most interest",           accent: "oklch(0.82 0.145 85)" },
+  "active-investors":  { icon: <Zap size={20} />,       desc: "Investors actively reviewing deals",              accent: "oklch(0.82 0.145 85)" },
+};
+
 function Discover() {
   const { profile } = useAuth();
-  const categories = DISCOVERY_CATEGORIES.filter((c) => {
-    if (profile?.role === "founder" && c.slug === "trending-founders") return false;
-    if (profile?.role === "investor" && c.slug === "active-investors") return false;
-    return true;
-  });
 
-  const sectors = categories.filter((c) => c.kind === "sector");
-  const curated = categories.filter((c) => c.kind !== "sector");
-  const serif = { fontFamily: "Playfair Display, serif" } as const;
+  const sectors = SECTORS.filter(s => s.value !== "other");
+  const metaSlugs = ["high-match", "raising-now", "new-this-week", "trending-founders", "active-investors"];
+  const visibleMeta = metaSlugs
+    .filter(slug => {
+      if (profile?.role === "founder" && slug === "trending-founders") return false;
+      if (profile?.role === "investor" && slug === "active-investors") return false;
+      return true;
+    });
 
   return (
-    <div className="flex flex-col gap-3">
-      {/* Editorial header */}
+    <div className="space-y-10">
+
+      {/* ── Page header ────────────────────────────── */}
       <div>
-        <div className="mb-1 flex items-center gap-2">
-          <div className="h-px w-5 bg-primary" />
-          <span className="text-[9px] font-semibold uppercase tracking-[0.3em] text-primary">Collections</span>
-        </div>
-        <h1 style={serif} className="text-2xl italic text-foreground">Discover</h1>
+        <p className="mono-label mb-2">Discovery</p>
+        <h1 className="font-display text-3xl font-extrabold leading-none tracking-tight">
+          Find your next<br />
+          <span style={{ color: "var(--color-primary)" }}>connection.</span>
+        </h1>
+        <p className="mt-3 text-sm leading-relaxed" style={{ color: "var(--color-muted-foreground)", maxWidth: 360 }}>
+          Browse by sector, filter by stage, or let the algorithm surface your highest-value matches.
+        </p>
       </div>
 
-      {/* Hero — All */}
+      {/* ── Hero: All Sectors ───────────────────────── */}
       <Link
         to="/discover/$category"
         params={{ category: "all" }}
-        className="group relative flex h-14 items-center justify-between overflow-hidden rounded-xl border border-primary/40 bg-gradient-to-br from-card to-background px-4 transition-transform active:scale-[0.98]"
+        className="group relative flex items-end overflow-hidden rounded-2xl p-6 transition-transform active:scale-[0.99]"
+        style={{
+          minHeight: 160,
+          background: "linear-gradient(135deg, oklch(0.17 0.022 65) 0%, oklch(0.12 0.010 55) 100%)",
+          border: "1px solid oklch(0.82 0.145 85 / 0.22)",
+          boxShadow: "0 0 80px -20px oklch(0.82 0.145 85 / 0.18)",
+        }}
       >
-        <div style={serif} className="pointer-events-none absolute right-3 top-0 select-none text-3xl italic text-primary/10">
-          01
-        </div>
+        {/* decorative rings */}
+        <div className="pointer-events-none absolute -right-12 -top-12 h-52 w-52 rounded-full"
+          style={{ border: "1px solid oklch(0.82 0.145 85 / 0.10)" }} />
+        <div className="pointer-events-none absolute -right-4 -top-4 h-32 w-32 rounded-full"
+          style={{ border: "1px solid oklch(0.82 0.145 85 / 0.15)" }} />
+        <div className="pointer-events-none absolute right-6 top-6 h-10 w-10 rounded-full"
+          style={{ background: "oklch(0.82 0.145 85 / 0.12)" }} />
+
         <div className="relative">
-          <p className="text-[9px] font-medium uppercase tracking-widest text-primary">Comprehensive</p>
-          <h3 style={serif} className="text-base text-foreground">All Sectors</h3>
-        </div>
-        <div className="relative flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-primary/40">
-          <ArrowRight className="h-3.5 w-3.5 text-primary" />
+          <p className="mono-label mb-2" style={{ color: "var(--color-primary)" }}>Comprehensive</p>
+          <h2 className="font-display text-2xl font-extrabold leading-none">All Sectors</h2>
+          <p className="mt-1 text-sm" style={{ color: "var(--color-muted-foreground)" }}>
+            Every founder and investor on the platform
+          </p>
+          <div
+            className="mt-4 inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-bold transition-colors group-hover:opacity-90"
+            style={{ background: "var(--color-primary)", color: "var(--color-primary-foreground)" }}
+          >
+            Browse all →
+          </div>
         </div>
       </Link>
 
-      {/* Curated row */}
+      {/* ── Curated collections ─────────────────────── */}
       <div>
-        <p className="mb-1.5 text-[9px] font-semibold uppercase tracking-[0.25em] text-muted-foreground">Curated</p>
-        <div className="grid grid-cols-2 gap-2">
-          {curated.map((c) => (
+        <p className="mono-label mb-4">Curated</p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {visibleMeta.map(slug => {
+            const conf = META_CONFIG[slug];
+            const cat = DISCOVERY_CATEGORIES.find(c => c.slug === slug);
+            if (!cat || !conf) return null;
+            return (
+              <Link
+                key={slug}
+                to="/discover/$category"
+                params={{ category: slug }}
+                className="group relative flex items-center gap-4 overflow-hidden rounded-xl p-4 transition-all active:scale-[0.98] hover:border-primary/40"
+                style={{
+                  background: "var(--color-card)",
+                  border: "1px solid var(--color-border)",
+                }}
+              >
+                {/* gold icon circle */}
+                <div
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors group-hover:opacity-90"
+                  style={{
+                    background: "oklch(0.82 0.145 85 / 0.12)",
+                    border: "1px solid oklch(0.82 0.145 85 / 0.22)",
+                    color: "var(--color-primary)",
+                  }}
+                >
+                  {conf.icon}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-bold leading-tight">{cat.label}</p>
+                  <p className="mt-0.5 truncate text-xs leading-tight" style={{ color: "var(--color-muted-foreground)" }}>
+                    {conf.desc}
+                  </p>
+                </div>
+                <div className="ml-auto shrink-0 opacity-30 transition-opacity group-hover:opacity-60" style={{ color: "var(--color-primary)" }}>
+                  →
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── Sectors ─────────────────────────────────── */}
+      <div>
+        <p className="mono-label mb-4">Sectors</p>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {sectors.map(s => (
             <Link
-              key={c.slug}
+              key={s.value}
               to="/discover/$category"
-              params={{ category: c.slug }}
-              className="group relative flex h-12 items-center overflow-hidden rounded-lg border border-border bg-card px-3 transition-all active:scale-[0.98] hover:border-primary/40"
+              params={{ category: s.value }}
+              className="group flex items-center gap-2.5 rounded-xl px-3 py-3 transition-all active:scale-[0.97] hover:border-primary/30"
+              style={{
+                background: "var(--color-card)",
+                border: "1px solid var(--color-border)",
+              }}
             >
-              <div className="pointer-events-none absolute -right-3 -top-3 h-10 w-10 rounded-full bg-primary/10 blur-2xl" />
-              <h3 style={serif} className="relative text-sm leading-tight text-foreground">{c.label}</h3>
+              <span
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs"
+                style={{
+                  background: "oklch(0.82 0.145 85 / 0.08)",
+                  color: "var(--color-primary)",
+                  border: "1px solid oklch(0.82 0.145 85 / 0.12)",
+                }}
+              >
+                {SECTOR_ICONS[s.value] ?? <Globe size={14} />}
+              </span>
+              <span className="text-sm font-medium leading-tight">{s.label}</span>
             </Link>
           ))}
         </div>
       </div>
 
-      {/* Sectors grid */}
-      <div>
-        <p className="mb-1.5 text-[9px] font-semibold uppercase tracking-[0.25em] text-muted-foreground">Sectors</p>
-        <div className="grid grid-cols-3 gap-1.5">
-          {sectors.map((c) => (
-            <Link
-              key={c.slug}
-              to="/discover/$category"
-              params={{ category: c.slug }}
-              className="flex h-10 items-center justify-center rounded-lg border border-border bg-card px-2 text-center text-[11px] font-medium leading-tight text-foreground transition-all active:scale-[0.98] hover:border-primary/40"
-            >
-              {c.label}
-            </Link>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }

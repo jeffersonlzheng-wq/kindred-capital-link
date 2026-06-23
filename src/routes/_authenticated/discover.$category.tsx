@@ -4,8 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { DISCOVERY_CATEGORIES, computeMatch } from "@/lib/catalyst";
 import { useAuth } from "@/lib/auth";
 import { MatchCard } from "@/components/MatchCard";
-import { useMemo } from "react";
-import { ArrowLeft } from "lucide-react";
+import { useMemo, useState } from "react";
+import { ArrowLeft, SlidersHorizontal } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/discover/$category")({
   component: CategoryPage,
@@ -18,6 +18,7 @@ type IRow = { user_id: string; fund_name: string; role: string | null; investor_
 function CategoryPage() {
   const { category } = Route.useParams();
   const { profile } = useAuth();
+  const [sort, setSort] = useState<"match" | "recent">("match");
 
   const { data, isLoading } = useQuery({
     queryKey: ["discover-all"],
@@ -50,10 +51,7 @@ function CategoryPage() {
         const p = pMap.get(f.user_id);
         if (!p) continue;
         const m = computeMatch(f, p.location, data.meInvestor, profile.location);
-        out.push({
-          other: { id: f.user_id, full_name: p.full_name, role: "founder", location: p.location, company_name: f.company_name, sector: f.sector, stage: f.stage, description: f.description, fundraising_status: f.fundraising_status, fInterests: f.interests ?? [] },
-          match: m, myInterests: data.meInvestor.interests ?? [], createdAt: f.created_at,
-        });
+        out.push({ other: { id: f.user_id, full_name: p.full_name, role: "founder", location: p.location, company_name: f.company_name, sector: f.sector, stage: f.stage, description: f.description, fundraising_status: f.fundraising_status, fInterests: f.interests ?? [] }, match: m, myInterests: data.meInvestor.interests ?? [], createdAt: f.created_at });
       }
     } else if (profile.role === "founder" && data.meFounder) {
       for (const i of data.investors) {
@@ -61,10 +59,7 @@ function CategoryPage() {
         const p = pMap.get(i.user_id);
         if (!p) continue;
         const m = computeMatch(data.meFounder, profile.location, i, p.location);
-        out.push({
-          other: { id: i.user_id, full_name: p.full_name, role: "investor", location: p.location, fund_name: i.fund_name, iRole: i.role, investor_type: i.investor_type, sectors: i.sectors ?? [], stages: i.stages ?? [], thesis: i.thesis, iInterests: i.interests ?? [] },
-          match: m, myInterests: data.meFounder.interests ?? [], createdAt: i.created_at,
-        });
+        out.push({ other: { id: i.user_id, full_name: p.full_name, role: "investor", location: p.location, fund_name: i.fund_name, iRole: i.role, investor_type: i.investor_type, sectors: i.sectors ?? [], stages: i.stages ?? [], thesis: i.thesis, iInterests: i.interests ?? [] }, match: m, myInterests: data.meFounder.interests ?? [], createdAt: i.created_at });
       }
     } else {
       for (const f of data.founders) {
@@ -78,12 +73,9 @@ function CategoryPage() {
     }
 
     let filtered = out;
-    // Investors only see founders; founders only see investors.
-    if (profile?.role === "founder") {
-      filtered = filtered.filter(x => x.other.role === "investor");
-    } else if (profile?.role === "investor") {
-      filtered = filtered.filter(x => x.other.role === "founder");
-    }
+    if (profile?.role === "founder") filtered = filtered.filter(x => x.other.role === "investor");
+    else if (profile?.role === "investor") filtered = filtered.filter(x => x.other.role === "founder");
+
     if (category && category !== "all") {
       const cat = DISCOVERY_CATEGORIES.find(c => c.slug === category);
       if (cat?.kind === "sector") {
@@ -101,42 +93,110 @@ function CategoryPage() {
         filtered = filtered.filter(x => new Date(x.createdAt).getTime() > wk);
       }
     }
-    return filtered.sort((a, b) => b.match - a.match);
-  }, [data, profile, category]);
+
+    return sort === "match"
+      ? filtered.sort((a, b) => b.match - a.match)
+      : filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }, [data, profile, category, sort]);
 
   const activeCat = category === "all"
-    ? { slug: "all", label: "All", kind: "curated" as const }
+    ? { slug: "all", label: "All Sectors", kind: "curated" as const }
     : DISCOVERY_CATEGORIES.find(c => c.slug === category) ?? null;
 
+  const top = cards[0];
+  const rest = cards.slice(1);
+
   return (
-    <div className="flex flex-col">
-      <div className="mb-6 flex items-center gap-3">
-        <Link to="/discover" className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-2 text-sm hover:bg-muted">
-          <ArrowLeft className="h-4 w-4" />
-          Back
-        </Link>
-        <div>
-          <h1 className="font-display text-2xl font-extrabold tracking-tight">{activeCat?.label ?? "Matches"}</h1>
-          <p className="text-sm text-muted-foreground">
-            {cards.length} {cards.length === 1 ? "match" : "matches"} · ranked by score
-          </p>
+    <div>
+      {/* ── Header ── */}
+      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="flex items-center gap-4">
+          <Link
+            to="/discover"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-colors hover:bg-white/5"
+            style={{ border: "1px solid var(--color-border)" }}
+          >
+            <ArrowLeft size={15} />
+          </Link>
+          <div>
+            <p className="mono-label">Discovery</p>
+            <h1 className="font-display text-2xl font-extrabold leading-tight">
+              {activeCat?.label ?? "Matches"}
+            </h1>
+          </div>
+        </div>
+
+        {/* Sort + count */}
+        <div className="flex items-center gap-3">
+          {!isLoading && (
+            <span className="mono-label">
+              {cards.length} {cards.length === 1 ? "result" : "results"}
+            </span>
+          )}
+          <div
+            className="flex items-center gap-1 rounded-xl p-1"
+            style={{ border: "1px solid var(--color-border)", background: "var(--color-card)" }}
+          >
+            {(["match", "recent"] as const).map(s => (
+              <button
+                key={s}
+                onClick={() => setSort(s)}
+                className="rounded-lg px-3 py-1.5 text-xs font-bold transition-all"
+                style={{
+                  background: sort === s ? "var(--color-primary)" : "transparent",
+                  color: sort === s ? "var(--color-primary-foreground)" : "var(--color-muted-foreground)",
+                }}
+              >
+                {s === "match" ? "Best match" : "Newest"}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-medium"
+            style={{ border: "1px solid var(--color-border)", color: "var(--color-muted-foreground)" }}>
+            <SlidersHorizontal size={12} />
+            Filter
+          </div>
         </div>
       </div>
 
+      {/* ── Content ── */}
       {isLoading ? (
-        <div className="py-12 text-center text-sm text-muted-foreground">Loading…</div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="h-64 animate-pulse rounded-2xl" style={{ background: "var(--color-card)" }} />
+          ))}
+        </div>
       ) : cards.length === 0 ? (
-        <div className="tile rounded-xl p-12 text-center">
-          <p className="text-sm text-muted-foreground">
-            No profiles in this category yet. Invite friends from{" "}
-            <Link to="/referrals" className="text-primary underline">Referrals</Link>.
+        <div className="flex flex-col items-center justify-center rounded-2xl py-20 text-center"
+          style={{ border: "1px solid var(--color-border)", background: "var(--color-card)" }}>
+          <div className="mb-3 text-4xl">🔍</div>
+          <p className="text-sm font-medium">No profiles here yet.</p>
+          <p className="mt-1 text-xs" style={{ color: "var(--color-muted-foreground)" }}>
+            Invite founders and investors from{" "}
+            <Link to="/referrals" style={{ color: "var(--color-primary)" }}>Referrals →</Link>
           </p>
         </div>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2">
-          {cards.map((c) => (
-            <MatchCard key={c.other.id} other={c.other} match={c.match} myInterests={c.myInterests} />
-          ))}
+        <div className="space-y-8">
+          {/* Featured top match */}
+          {top && sort === "match" && (
+            <div>
+              <p className="mono-label mb-3">Top match</p>
+              <MatchCard other={top.other} match={top.match} myInterests={top.myInterests} featured />
+            </div>
+          )}
+
+          {/* Grid */}
+          <div>
+            {sort === "match" && rest.length > 0 && (
+              <p className="mono-label mb-3">All results</p>
+            )}
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {(sort === "match" ? rest : cards).map((c) => (
+                <MatchCard key={c.other.id} other={c.other} match={c.match} myInterests={c.myInterests} />
+              ))}
+            </div>
+          </div>
         </div>
       )}
     </div>
