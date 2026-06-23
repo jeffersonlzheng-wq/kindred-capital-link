@@ -1,5 +1,6 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth";
+import { useUnreadCount } from "@/hooks/useUnreadCount";
 import { type ReactNode } from "react";
 import { LayoutDashboard, Compass, MessageSquare, FileText, Gift, Shield } from "lucide-react";
 
@@ -15,6 +16,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { profile, isAdmin, signOut } = useAuth();
   const path = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
+  const unreadCount = useUnreadCount();
 
   const items = [
     ...NAV,
@@ -83,19 +85,32 @@ export function AppShell({ children }: { children: ReactNode }) {
         <ul className="mx-auto flex max-w-7xl items-center justify-around px-2">
           {items.map(({ to, label, Icon }) => {
             const active = path === to || path.startsWith(to + "/");
+            const isMessages = to === "/messages";
+            const showBadge = isMessages && unreadCount > 0;
             return (
               <li key={to} className="flex-1">
                 <Link
                   to={to}
                   aria-label={label}
                   title={label}
-                  className="flex h-14 flex-col items-center justify-center gap-0.5 transition-colors"
+                  className="relative flex h-14 flex-col items-center justify-center gap-0.5 transition-colors"
                   style={{ color: active ? "var(--color-primary)" : "var(--color-muted-foreground)" }}
                 >
-                  <Icon
-                    size={20}
-                    strokeWidth={active ? 2.5 : 1.8}
-                  />
+                  <span className="relative">
+                    <Icon size={20} strokeWidth={active ? 2.5 : 1.8} />
+                    {showBadge && (
+                      <span
+                        className="absolute -right-1.5 -top-1.5 flex min-w-[16px] items-center justify-center rounded-full px-1 font-mono text-[9px] font-bold leading-none"
+                        style={{
+                          height: 16,
+                          background: "var(--color-primary)",
+                          color: "var(--color-primary-foreground)",
+                        }}
+                      >
+                        {unreadCount > 9 ? "9+" : unreadCount}
+                      </span>
+                    )}
+                  </span>
                   {/* Gold underline dot */}
                   <span
                     className="rounded-full transition-all"

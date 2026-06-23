@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/auth";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { DOC_TYPE_LABELS } from "@/lib/catalyst";
+import { markConversationRead } from "@/hooks/useUnreadCount";
 
 export const Route = createFileRoute("/_authenticated/messages/$id")({
   component: Conversation,
@@ -46,6 +47,11 @@ function Conversation() {
       return data ?? [];
     },
   });
+
+  // Mark this conversation as read whenever it's open or new messages arrive
+  useEffect(() => {
+    markConversationRead(id);
+  }, [id, messages]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
