@@ -97,7 +97,7 @@ function Discover() {
                 key={slug}
                 to="/discover/$category"
                 params={{ category: slug }}
-                className="group flex items-center gap-2.5 overflow-hidden rounded-xl px-3 py-2.5 transition-all active:scale-[0.97] hover:border-primary/40"
+                className="group flex items-center gap-2.5 rounded-xl px-3 py-2.5 transition-all active:scale-[0.97] hover:border-primary/40"
                 style={{ background: "var(--color-card)", border: "1px solid var(--color-border)" }}
               >
                 <div
@@ -110,9 +110,9 @@ function Discover() {
                 >
                   {conf.icon}
                 </div>
-                <div className="min-w-0">
-                  <p className="text-xs font-bold leading-tight truncate">{cat.label}</p>
-                  <p className="text-[10px] leading-tight truncate" style={{ color: "var(--color-muted-foreground)" }}>
+                <div>
+                  <p className="text-xs font-bold leading-snug">{cat.label}</p>
+                  <p className="text-[10px] leading-snug" style={{ color: "var(--color-muted-foreground)" }}>
                     {conf.desc}
                   </p>
                 </div>
@@ -131,20 +131,20 @@ function Discover() {
               key={s.value}
               to="/discover/$category"
               params={{ category: s.value }}
-              className="group flex items-center gap-2 rounded-xl px-2.5 py-2 transition-all active:scale-[0.96] hover:border-primary/30"
+              className="group flex flex-col items-center justify-center gap-1.5 rounded-xl px-2 py-3 text-center transition-all active:scale-[0.96] hover:border-primary/30"
               style={{ background: "var(--color-card)", border: "1px solid var(--color-border)" }}
             >
               <span
-                className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[11px]"
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg"
                 style={{
                   background: "oklch(0.82 0.145 85 / 0.08)",
                   color: "var(--color-primary)",
                   border: "1px solid oklch(0.82 0.145 85 / 0.12)",
                 }}
               >
-                {SECTOR_ICONS[s.value] ?? <Globe size={11} />}
+                {SECTOR_ICONS[s.value] ?? <Globe size={13} />}
               </span>
-              <span className="text-xs font-medium leading-tight truncate">{s.label}</span>
+              <span className="text-[11px] font-semibold leading-tight">{s.label}</span>
             </Link>
           ))}
         </div>
