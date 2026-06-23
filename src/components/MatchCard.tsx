@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { labelFor, SECTORS, STAGES, sharedInterests, INVESTOR_TYPES } from "@/lib/catalyst";
-import { MapPin, Sparkles } from "lucide-react";
+import { MapPin, Sparkles, MessageCircle, Loader2 } from "lucide-react";
+import { useStartConversation } from "@/hooks/useStartConversation";
 
 type Other = {
   id: string;
@@ -36,19 +37,24 @@ export function MatchCard({
   other,
   match,
   myInterests = [],
-  onMessage,
   featured = false,
 }: {
   other: Other;
   match: number;
   myInterests?: string[];
-  onMessage?: () => void;
   featured?: boolean;
 }) {
   const isFounder = other.role === "founder";
   const interestsOther = isFounder ? other.fInterests : other.iInterests;
   const shared = sharedInterests(myInterests, interestsOther);
   const isHigh = match >= 70;
+  const { start, loading } = useStartConversation();
+
+  function handleMessage(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    start(other.id);
+  }
 
   /* ── Featured (wide) card ─────────────────── */
   if (featured) {
@@ -64,11 +70,9 @@ export function MatchCard({
           boxShadow: "0 8px 40px -12px oklch(0.82 0.145 85 / 0.15)",
         }}
       >
-        {/* Gold accent strip */}
         <div style={{ height: 3, background: "linear-gradient(90deg, oklch(0.82 0.145 85) 0%, oklch(0.82 0.145 85 / 0.2) 100%)" }} />
 
         <div className="p-6 sm:flex sm:items-start sm:gap-6">
-          {/* Left: avatar + name */}
           <div className="flex items-center gap-4 sm:flex-col sm:items-start sm:w-40 sm:shrink-0">
             <div
               className="flex h-14 w-14 items-center justify-center rounded-2xl font-display text-xl font-bold shrink-0"
@@ -84,9 +88,7 @@ export function MatchCard({
             </div>
           </div>
 
-          {/* Middle: details */}
           <div className="mt-4 flex-1 sm:mt-0">
-            {/* Tags */}
             <div className="flex flex-wrap gap-1.5 mb-3">
               {isFounder ? (
                 <>
@@ -106,13 +108,9 @@ export function MatchCard({
                 </span>
               )}
             </div>
-
-            {/* Desc */}
             <p className="text-sm leading-relaxed line-clamp-2" style={{ color: "var(--color-muted-foreground)" }}>
               {isFounder ? other.description : other.thesis}
             </p>
-
-            {/* Shared interests */}
             {shared.length > 0 && (
               <div className="mt-3 flex items-center gap-1.5 text-xs" style={{ color: "var(--color-muted-foreground)" }}>
                 <Sparkles size={11} style={{ color: "var(--color-primary)" }} />
@@ -121,8 +119,7 @@ export function MatchCard({
             )}
           </div>
 
-          {/* Right: score */}
-          <div className="mt-4 flex items-center gap-3 sm:mt-0 sm:flex-col sm:items-end sm:gap-1">
+          <div className="mt-4 flex items-center gap-3 sm:mt-0 sm:flex-col sm:items-end sm:gap-2">
             <div>
               <div className="font-mono text-4xl font-bold tabular-nums text-right leading-none" style={{ color: matchColor(match) }}>
                 {match}%
@@ -135,6 +132,15 @@ export function MatchCard({
             >
               <Sparkles size={10} /> Top pick
             </span>
+            <button
+              onClick={handleMessage}
+              disabled={loading}
+              className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold transition-opacity hover:opacity-80 disabled:opacity-40"
+              style={{ border: "1px solid var(--color-border)", color: "var(--color-foreground)" }}
+            >
+              {loading ? <Loader2 size={12} className="animate-spin" /> : <MessageCircle size={12} />}
+              Message
+            </button>
           </div>
         </div>
       </Link>
@@ -154,17 +160,13 @@ export function MatchCard({
         boxShadow: isHigh ? "0 4px 24px -8px oklch(0.82 0.145 85 / 0.10)" : "none",
       }}
     >
-      {/* Top section */}
       <div className="flex items-start justify-between p-5">
-        {/* Avatar */}
         <div
           className="flex h-11 w-11 items-center justify-center rounded-xl font-display text-base font-bold shrink-0"
           style={{ background: "var(--color-surface-2)", border: "1px solid var(--color-border)" }}
         >
           {getInitials(other.full_name)}
         </div>
-
-        {/* Match score */}
         <div className="text-right">
           <div className="font-mono text-3xl font-bold tabular-nums leading-none" style={{ color: matchColor(match) }}>
             {match}%
@@ -173,7 +175,6 @@ export function MatchCard({
         </div>
       </div>
 
-      {/* Body */}
       <div className="flex-1 px-5 pb-5 flex flex-col">
         <h4 className="font-display text-base font-bold leading-tight">{other.full_name}</h4>
         <p className="text-xs mt-0.5 truncate" style={{ color: "var(--color-muted-foreground)" }}>
@@ -181,15 +182,11 @@ export function MatchCard({
             ? `${other.company_name || "Founder"}${other.sector ? " · " + labelFor(SECTORS, other.sector) : ""}`
             : `${other.fund_name || "Investor"}${other.iRole ? " · " + other.iRole : ""}`}
         </p>
-
-        {/* Location */}
         {other.location && (
           <p className="mt-1 flex items-center gap-1 text-xs" style={{ color: "var(--color-muted-foreground)", opacity: 0.65 }}>
             <MapPin size={9} /> {other.location}
           </p>
         )}
-
-        {/* Tags */}
         <div className="mt-3 flex flex-wrap gap-1">
           {isFounder ? (
             <>
@@ -203,13 +200,9 @@ export function MatchCard({
             </>
           )}
         </div>
-
-        {/* Description */}
         <p className="mt-3 text-xs leading-relaxed line-clamp-2 flex-1" style={{ color: "var(--color-muted-foreground)" }}>
           {isFounder ? other.description : other.thesis}
         </p>
-
-        {/* Shared interests */}
         {shared.length > 0 && (
           <div className="mt-3 flex items-center gap-1.5 text-xs" style={{ color: "var(--color-muted-foreground)" }}>
             <Sparkles size={10} style={{ color: "var(--color-primary)" }} />
@@ -217,20 +210,20 @@ export function MatchCard({
             {shared.length > 2 && ` +${shared.length - 2}`}
           </div>
         )}
-
-        {/* Divider + CTA */}
         <div
           className="mt-4 pt-4 flex items-center justify-between"
           style={{ borderTop: "1px solid var(--color-border)" }}
         >
-          <span className="text-xs font-semibold transition-colors" style={{ color: "var(--color-primary)" }}>
+          <span className="text-xs font-semibold" style={{ color: "var(--color-primary)" }}>
             View profile →
           </span>
           <button
-            onClick={e => { e.preventDefault(); onMessage?.(); }}
-            className="text-xs font-medium transition-opacity hover:opacity-70 rounded-lg px-3 py-1.5"
+            onClick={handleMessage}
+            disabled={loading}
+            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-opacity hover:opacity-70 disabled:opacity-40"
             style={{ border: "1px solid var(--color-border)", color: "var(--color-muted-foreground)" }}
           >
+            {loading ? <Loader2 size={11} className="animate-spin" /> : <MessageCircle size={11} />}
             Message
           </button>
         </div>
