@@ -39,45 +39,49 @@
 }
 
 :root {
-  --radius: 0.375rem;
+  --radius: 0.5rem;
 
-  /* Kalshi-inspired: cool near-black + mint green */
-  --background: oklch(0.095 0.008 248);
-  --foreground: oklch(0.96 0.004 248);
-  --surface: oklch(0.125 0.009 248);
-  --surface-2: oklch(0.155 0.010 248);
-  --card: oklch(0.125 0.009 248);
-  --card-foreground: oklch(0.96 0.004 248);
-  --popover: oklch(0.125 0.009 248);
-  --popover-foreground: oklch(0.96 0.004 248);
-  --primary: oklch(0.74 0.19 158);        /* Kalshi mint-green */
-  --primary-foreground: oklch(0.09 0.008 248);
-  --secondary: oklch(0.18 0.010 248);
-  --secondary-foreground: oklch(0.96 0.004 248);
-  --muted: oklch(0.18 0.010 248);
-  --muted-foreground: oklch(0.60 0.012 248);
-  --accent: oklch(0.20 0.012 248);
-  --accent-foreground: oklch(0.96 0.004 248);
-  --destructive: oklch(0.62 0.22 27);
+  /* Gold · Black · White */
+  --background:      oklch(0.10 0.005 55);
+  --foreground:      oklch(0.97 0.006 80);
+  --surface:         oklch(0.145 0.007 55);
+  --surface-2:       oklch(0.185 0.009 55);
+  --card:            oklch(0.145 0.007 55);
+  --card-foreground: oklch(0.97 0.006 80);
+  --popover:         oklch(0.145 0.007 55);
+  --popover-foreground: oklch(0.97 0.006 80);
+  --primary:         oklch(0.82 0.145 85);   /* warm gold */
+  --primary-foreground: oklch(0.11 0.005 55);
+  --secondary:       oklch(0.21 0.010 55);
+  --secondary-foreground: oklch(0.97 0.006 80);
+  --muted:           oklch(0.20 0.009 55);
+  --muted-foreground: oklch(0.63 0.018 75);
+  --accent:          oklch(0.28 0.055 82);
+  --accent-foreground: oklch(0.97 0.006 80);
+  --destructive:     oklch(0.62 0.22 27);
   --destructive-foreground: oklch(0.99 0 0);
-  --border: oklch(0.20 0.011 248);
-  --input: oklch(0.20 0.011 248);
-  --ring: oklch(0.74 0.19 158);
-  --match: oklch(0.74 0.19 158);
+  --border:          oklch(0.24 0.012 65);
+  --input:           oklch(0.24 0.012 65);
+  --ring:            oklch(0.82 0.145 85);
+  --match:           oklch(0.82 0.145 85);
 }
 
 @layer base {
   * { border-color: var(--color-border); }
+
   html, body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+    min-height: 100%;
   }
+
   body {
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    font-feature-settings: "cv02", "cv03", "cv04";
   }
-  .font-mono { font-family: var(--font-mono); }
+
+  .font-mono    { font-family: var(--font-mono); }
   .font-display { font-family: var(--font-display); letter-spacing: -0.025em; }
 }
 
@@ -86,29 +90,27 @@
     background: var(--color-surface);
     border: 1px solid var(--color-border);
   }
-  .tile-hover:hover {
-    background: var(--color-surface-2);
-  }
+  .tile-hover:hover { background: var(--color-surface-2); }
 
-  /* Kalshi-style pill tag */
+  /* Default chip: muted grey */
   .chip {
     display: inline-flex;
     align-items: center;
-    padding: 2px 7px;
+    padding: 2px 8px;
     border-radius: 4px;
     background: var(--color-muted);
+    border: 1px solid var(--color-border);
     color: var(--color-muted-foreground);
     font-size: 10px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    border: 1px solid var(--color-border);
   }
 
-  /* Green "active" chip */
-  .chip-green {
-    background: oklch(0.74 0.19 158 / 0.12);
-    border-color: oklch(0.74 0.19 158 / 0.30);
+  /* Gold chip for active/raising states */
+  .chip-gold {
+    background: oklch(0.82 0.145 85 / 0.12);
+    border-color: oklch(0.82 0.145 85 / 0.28);
     color: var(--color-primary);
   }
 
@@ -120,7 +122,7 @@
     color: var(--color-muted-foreground);
   }
 
-  /* Kalshi-style match score — monospaced, green */
+  /* Monospaced green match score → gold here */
   .match-score {
     font-family: var(--font-mono);
     font-weight: 700;
@@ -128,16 +130,13 @@
     color: var(--color-primary);
   }
 
-  /* Horizontal divider rows */
-  .row-item {
-    display: flex;
-    align-items: center;
-    padding: 14px 0;
-    border-bottom: 1px solid var(--color-border);
-    gap: 12px;
-    cursor: pointer;
+  /* Row hover effect */
+  .row-hover {
     transition: background 0.12s ease;
+    margin: 0 -8px;
+    padding-left: 8px;
+    padding-right: 8px;
+    border-radius: 6px;
   }
-  .row-item:last-child { border-bottom: none; }
-  .row-item:hover { background: var(--color-surface-2); margin: 0 -16px; padding: 14px 16px; border-radius: 6px; }
+  .row-hover:hover { background: var(--color-surface-2); }
 }
